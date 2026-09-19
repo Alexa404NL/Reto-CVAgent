@@ -21,5 +21,9 @@ export function createApp() {
   app.get('/ping', (req, res) => {
     res.send('pong');
   });
+    const validation = validateRequest(req.body);
+    if (!validation.ok) {
+      return sendError(res, validation.type, validation.message, { param: validation.param, code: validation.code });
+    }
   return app;
 }
