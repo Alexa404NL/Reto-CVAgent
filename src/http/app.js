@@ -4,6 +4,8 @@ import { sanitize } from "../security/sanitizer.js";
 import { validateRequest } from "./validate.js";
 import { sendJson, sendSse } from "./responses.js";
 import { sendError } from "./errors.js";
+import { generateReply } from "../core/agent.js";
+import { retrieve, formatContext } from "../core/retrieval.js";
 
 export function createApp() {
   const app = express();
@@ -36,6 +38,17 @@ export function createApp() {
       }
       lastUser.text = clean.text;
     }
+
+    let context;
+    if (lastUser) {
+      const result = await retrieve(lastUser.text);
+      if (!result.degraded && result.chunks.length === 0) {
+        const noInfo = "No tengo esa información en el perfil de Alexa. ¿Te puedo ayudar con algo más de su trayectoria?";
+        return validation.stream ? sendSse(res, noInfo) : sendJson(res, noInfo);
+      }
+      if (!result.degraded) context = formatContext(result.chunks);
+    }
+
     let reply;
     try {
       reply = await generateReply(validation.messages, context);
