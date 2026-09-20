@@ -20,8 +20,10 @@ export async function generateReply(messages, context) {
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.text }],
   }));
+
   const timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS ?? 15000);
   const maxOutputTokens = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS ?? 512);
+
   try {
     const response = await getClient().models.generateContent({
       model,
@@ -34,6 +36,7 @@ export async function generateReply(messages, context) {
         abortSignal: AbortSignal.timeout(timeoutMs),
       },
     });
+
     const text = response.text?.trim();
     if (!text) throw new Error("Respuesta vacía del modelo.");
     const u = response.usageMetadata ?? {};
@@ -54,4 +57,11 @@ export async function generateReply(messages, context) {
     }
     throw err;
   }
+}
+
+function redactSystemLeak(text) {
+  const prompt = systemPrompt();
+  return text.includes(prompt.slice(0, 60))
+    ? "No puedo compartir esa información. ¿En qué más te puedo ayudar?"
+    : text;
 }

@@ -67,5 +67,16 @@ export function createApp() {
 
   app.use((_req, res) => sendError(res, "not_found", "Recurso no encontrado."));
 
+  app.use((err, _req, res, _next) => {
+    if (err?.type === "entity.too.large" || err?.status === 413) {
+      return sendError(res, "invalid_request", "El cuerpo de la solicitud es demasiado grande.");
+    }
+    if (err?.type === "entity.parse.failed" || err instanceof SyntaxError) {
+      return sendError(res, "invalid_request", "JSON inválido en el cuerpo de la solicitud.");
+    }
+    console.error(err);
+    sendError(res, "server_error", "Error interno del servidor.");
+  });
+
   return app;
 }
