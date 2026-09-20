@@ -56,9 +56,31 @@ function buildResponseObject(text, usage = ZERO_USAGE, maxOutputTokens = null) {
 export function sendJson(res, text, usage, maxOutputTokens) {
   res.status(200).json(buildResponseObject(text, usage, maxOutputTokens));
 }
+
 export function sendSse(res, text, usage, maxOutputTokens) {
   res.status(200).set({
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
   });
+  const response = buildResponseObject(text, usage, maxOutputTokens);
+  const item = response.output[0];
+  let seq = 0;
+  const emit = (event, data) => {
+    seq += 1;
+    res.write(`event: ${event}\ndata: ${JSON.stringify({ type: event, sequence_number: seq, ...data })}\n\n`);
+  };
+
+  emit("response.created", { response: { ...response, output: [] } });
+  emit("response.in_progress", { response: { ...response, output: [] } });
+  emit("response.output_item.added", { output_index: 0, item: { ...item, content: [] } });
+  emit("response.content_part.added", { item_id: item.id, output_index: 0, content_index: 0, part: { type: "output_text", text: "", annotations: [] } });
+  emit("response.output_text.delta", { item_id: item.id, output_index: 0, content_index: 0, delta: text });
+  emit("response.output_text.done", { item_id: item.id, output_index: 0, content_index: 0, text });
+  emit("response.content_part.done", { item_id: item.id, output_index: 0, content_index: 0, part: item.content[0] });
+  emit("response.output_item.done", { output_index: 0, item });
+  emit("response.completed", { response });
+
+  res.write("data: [DONE]\n\n");
+  res.end();
+}
