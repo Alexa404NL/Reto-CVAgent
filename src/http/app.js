@@ -3,6 +3,7 @@ import helmet from "helmet";
 import { sanitize } from "../security/sanitizer.js";
 import { validateRequest } from "./validate.js";
 import { sendJson, sendSse } from "./responses.js";
+import { sendError } from "./errors.js";
 
 export function createApp() {
   const app = express();
@@ -35,5 +36,23 @@ export function createApp() {
       }
       lastUser.text = clean.text;
     }
+    let reply;
+    try {
+      reply = await generateReply(validation.messages, context);
+    } catch (err) {
+      console.error(err);
+      if (err?.type === "too_many_requests") {
+        return sendError(res, "too_many_requests", "El modelo alcanzó su cuota, intenta más tarde.");
+      }
+      return sendError(res, "model_error", "El modelo no pudo generar una respuesta en este momento.");
+    }
+
+    return validation.stream
+      ? sendSse(res, reply.text, reply.usage, reply.maxOutputTokens)
+      : sendJson(res, reply.text, reply.usage, reply.maxOutputTokens);
+  });
+
+  app.use((_req, res) => sendError(res, "not_found", "Recurso no encontrado."));
+
   return app;
 }
