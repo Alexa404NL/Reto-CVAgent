@@ -2,6 +2,7 @@ import express from "express";
 import helmet from "helmet";
 import { sanitize } from "../security/sanitizer.js";
 import { validateRequest } from "./validate.js";
+import { sendJson, sendSse } from "./responses.js";
 
 export function createApp() {
   const app = express();
@@ -24,6 +25,15 @@ export function createApp() {
     const validation = validateRequest(req.body);
     if (!validation.ok) {
       return sendError(res, validation.type, validation.message, { param: validation.param, code: validation.code });
+    }
+
+    const lastUser = [...validation.messages].reverse().find((m) => m.role === "user");
+    if (lastUser) {
+      const clean = sanitize(lastUser.text);
+      if (!clean.safe) {
+        return validation.stream ? sendSse(res, clean.reason) : sendJson(res, clean.reason);
+      }
+      lastUser.text = clean.text;
     }
   return app;
 }
