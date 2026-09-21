@@ -52,7 +52,8 @@ export function createApp() {
 
     let context;
     if (lastUser) {
-      const result = await retrieve(lastUser.text);
+      const searchQuery = validation.messages.slice(-3).map((m) => m.text).join("\n");
+      const result = await retrieve(searchQuery);
       if (!result.degraded && result.chunks.length === 0) {
         const noInfo = "No tengo esa información en el perfil de Alexa. ¿Te puedo ayudar con algo más de su trayectoria?";
         return validation.stream ? sendSse(res, noInfo) : sendJson(res, noInfo);
