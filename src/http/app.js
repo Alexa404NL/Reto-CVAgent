@@ -1,5 +1,7 @@
 import express from "express";
 import helmet from "helmet";
+import { requireAuth } from "../security/auth.js";
+import { perIpLimiter, dailyCapLimiter } from "../security/rateLimit.js";
 import { sanitize } from "../security/sanitizer.js";
 import { validateRequest } from "./validate.js";
 import { sendJson, sendSse } from "./responses.js";
@@ -26,6 +28,11 @@ export function createApp() {
     res.send('pong');
   });
   app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
+  app.post("/v1/responses", requireAuth, perIpLimiter, dailyCapLimiter, async (req, res) => {
+    if (req.get("content-type")?.includes("application/json") !== true) {
+      return sendError(res, "invalid_request", "Content-Type debe ser application/json.", { param: "content-type" });
+    }
+
     const validation = validateRequest(req.body);
     if (!validation.ok) {
       return sendError(res, validation.type, validation.message, { param: validation.param, code: validation.code });

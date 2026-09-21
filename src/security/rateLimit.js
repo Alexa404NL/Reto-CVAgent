@@ -30,3 +30,4 @@ export function dailyCapLimiter(req, res, next) {
   }
   dailyCount += 1;
   next();
+}
