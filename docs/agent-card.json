@@ -1,7 +1,7 @@
 {
   "name": "Alexa Lara — Agente de CV",
   "description": "Agente que responde sobre la trayectoria profesional de Alexa Lara.",
-  "url": "MIA for now ... stay tuned",
+  "url": "https://reto-cvagent.onrender.com",
   "version": "1.0.0",
   "capabilities": {
     "streaming": true,
