@@ -25,6 +25,7 @@ export function createApp() {
   app.get('/ping', (req, res) => {
     res.send('pong');
   });
+  app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
     const validation = validateRequest(req.body);
     if (!validation.ok) {
       return sendError(res, validation.type, validation.message, { param: validation.param, code: validation.code });
