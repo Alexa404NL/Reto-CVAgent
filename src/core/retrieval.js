@@ -4,12 +4,28 @@ import { sslConfig } from "./db.js";
 
 const TOP_K = 4;
 
-let pool;
-function getPool() {
-  if (!pool) {
-    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL_READONLY, ssl: sslConfig(), max: 3 });
+let pools;
+function getPools() {
+  if (!pools) {
+    pools = [{ connectionString: process.env.DATABASE_URL_READONLY, ssl: sslConfig() }];
+    if (process.env.DATABASE_URL_READONLY_FALLBACK) {
+      pools.push({ connectionString: process.env.DATABASE_URL_READONLY_FALLBACK, ssl: { rejectUnauthorized: true } });
+    }
+    pools = pools.map((cfg) => new pg.Pool({ ...cfg, max: 3 }));
   }
-  return pool;
+  return pools;
+}
+
+async function queryWithFallback(sql, params) {
+  let lastErr;
+  for (const pool of getPools()) {
+    try {
+      return await pool.query(sql, params);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
 }
 
 export async function retrieve(query) {
@@ -23,7 +39,7 @@ export async function retrieve(query) {
   }
 
   try {
-    const { rows } = await getPool().query(
+    const { rows } = await queryWithFallback(
       `SELECT title, content, 1 - (embedding <=> $1::vector) AS similarity
        FROM cv_chunks
        ORDER BY embedding <=> $1::vector
