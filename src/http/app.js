@@ -28,6 +28,9 @@ export function createApp() {
     res.send('pong');
   });
   app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
+  app.get("/.well-known/agent-card.json", (_req, res) => {
+    res.status(200).sendFile("agent-card.json", { root: "docs" });
+  });
   app.post("/v1/responses", requireAuth, perIpLimiter, dailyCapLimiter, async (req, res) => {
     if (req.get("content-type")?.includes("application/json") !== true) {
       return sendError(res, "invalid_request", "Content-Type debe ser application/json.", { param: "content-type" });

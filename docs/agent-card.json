@@ -1,0 +1,15 @@
+{
+  "name": "Alexa Lara — Agente de CV",
+  "description": "Agente que responde sobre la trayectoria profesional de Alexa Lara.",
+  "url": "MIA for now ... stay tuned",
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": true,
+    "stateful": false,
+    "attachments": false
+  },
+  "security": {
+    "authentication": "bearer",
+    "notes": "Requiere header Authorization: Bearer <token>. Límite de solicitudes por IP y tope global. IMPORTANTE: No se conserva historial entre respuestas "
+  }
+}
